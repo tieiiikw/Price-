@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BSC Wallet — Laam</title>
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Web3.js -->
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+
+  <!-- QRCode.js (browser-side QR generator) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- CryptoJS for encryption -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+  <style>
+  /* Universal reset and center layout */
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Center all content perfectly */
+body {
+  background: radial-gradient(circle at center, #1a2a6c, #b21f1f, #fdbb2d);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+}
+
+    /* ===== Container ===== */
+    .container {
+      width: 100%;
+      max-width: 400px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      overflow: hidden;
+    }
+
+    /* Screen Management */
+    .screen{padding:30px;display:none}
+    .screen.active{display:block}
+    #newTokenAddress {
+  transition: border-color 0.3s;
+}
+#tokenStatusIcon {
+  transition: color 0.3s ease;
+}
+    /* Typography */
+    h3{text-align:center;margin-bottom:25px;color:#333;font-size:24px;font-weight:600}
+    h4{margin:0 0 8px 0;color:#333}
+    label{display:block;margin:15px 0 8px;color:#555;font-weight:500}
+    .muted{color:#666;font-size:13px}
+    
+    /* Form Elements */
+    textarea,input{width:100%;padding:12px 15px;border:2px solid #ddd;border-radius:10px;font-size:16px;transition:all 0.3s;resize:none}
+    textarea:focus,input:focus{border-color:#4a6cf7;outline:none;box-shadow:0 0 0 3px rgba(74,108,247,0.2)}
+    
+    /* Buttons */
+    button{padding:14px;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s;margin-top:10px;width:100%}
+    .small-btn{padding:6px 10px;font-size:14px;border-radius:6px;width:auto}
+    .btn-ghost{background:#f4f6fb;color:#333}
+    .secondary{background:#f0f4ff;color:#333;border:1px solid #dbe6ff}
+    .danger{background:#ff6b6b}
+    .green{background:#28a745}
+    
+    /* Import/Create Screen Specific */
+    .import-wallet-btn{background:#4a6cf7;color:white}
+    .import-wallet-btn:hover{background:#3a5ce5;transform:translateY(-2px)}
+    
+    .import-wallet-divider{text-align:center;margin:20px 0;color:#777;font-weight:500;position:relative}
+    .import-wallet-divider::before{content:"";position:absolute;top:50%;left:0;width:42%;height:1px;background:#ddd}
+    .import-wallet-divider::after{content:"";position:absolute;top:50%;right:0;width:42%;height:1px;background:#ddd}
+    
+    .create-new-wallet-btn{background:#f8f9fa;color:#333;border:2px solid #ddd}
+    .create-new-wallet-btn:hover{background:#e9ecef;transform:translateY(-2px)}
+    
+    /* Account Generated Screen */
+    .success-animation{text-align:center;margin-bottom:20px}
+    .success-animation i{font-size:50px;color:#28a745;animation:pulse 1.5s infinite}
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    
+    .key-display{background:#f8f9fa;border:2px solid #ddd;border-radius:10px;padding:15px;margin:15px 0;position:relative}
+    .key-title{font-size:14px;color:#777;margin-bottom:8px}
+    .key-value{font-family:monospace;font-size:18px;font-weight:bold;color:#333;word-break:break-all}
+    .copy-btn{position:absolute;top:15px;right:15px;background:#4a6cf7;color:white;width:auto;padding:8px 12px;font-size:14px;border-radius:6px}
+    .copy-btn:hover{background:#3a5ce5}
+    
+    .warning-box{background:#fff3cd;border:1px solid #ffeaa7;border-radius:10px;padding:15px;margin:20px 0;color:#856404}
+    .warning-box h4{margin-bottom:8px;font-size:16px}
+    
+    .use-account-btn{background:#28a745;color:white;margin-top:20px}
+    .use-account-btn:hover{background:#218838;transform:translateY(-2px)}
+    
+    .back-btn{background:transparent;color:#4a6cf7;border:2px solid #4a6cf7;margin-top:15px}
+    .back-btn:hover{background:#f0f4ff}
+    
+    /* Lock Screen Styles */
+    .lock-screen {
+      padding: 30px;
+      text-align: center;
+    }
+    
+    .pin-inputs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    
+    .pin-digit {
+      width: 50px;
+      height: 50px;
+      text-align: center;
+      font-size: 24px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    
+    .pin-digit:focus {
+      border-color: #4a6cf7;
+      outline: none;
+    }
+    
+    .lock-btn {
+      background: #4a6cf7;
+      color: white;
+      margin-top: 15px;
+    }
+    
+    .lock-btn:hover {
+      background: #3a5ce5;
+    }
+    
+    .lock-header {
+      margin-bottom: 30px;
+    }
+    
+    /* Main Dashboard Styles */  
+    .dashboard-container {
+      width: 100%;
+      background: #fff;
+      border-radius: 18px;
+      display: none;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
+      margin: 0 auto;
+    }
+
+    .dashboard-container.active {
+      display: flex;
+    }
+
+    .col {
+      width: 100%;
+      padding: 24px;
+    }
+
+    .wallet-box {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .wallet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .wallet-info {
+      text-align: center;
+      flex: 1;
+    }
+
+    .wallet-address {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 14px;
+      margin-top: 5px;
+      color: #4a6cf7;
+    }
+
+    .balance-section {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .balance-amount {
+      font-size: 28px;
+      font-weight: 800;
+      color: #333;
+      margin: 5px 0;
+    }
+
+    .balance-usd {
+      color: #666;
+      font-size: 16px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    /* Assets List */
+    .assets-list { max-height: 400px; overflow-y: auto; }
+    .asset-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.2s;
+      position: relative;
+      cursor: pointer;
+    }
+    .asset-item:hover { background: #f9f9f9; }
+
+    .asset-icon-wrapper {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ddd;
+      border-radius: 50%;
+      font-weight: bold;
+      font-size: 14px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .asset-logo { width: 32px; height: 32px; border-radius: 50%; }
+
+    .asset-details { flex: 1; }
+    .asset-name { font-weight: 600; color: #333; }
+    .asset-symbol { font-size: 12px; color: #666; }
+
+    .asset-balance { text-align: right; margin-left: 12px; }
+    .asset-amount { font-weight: 700; color: #333; }
+    .asset-value { font-size: 12px; color: #666; }
+
+    .asset-actions {
+      display: none;
+      margin-top: 6px;
+      gap: 6px;
+    }
+    .small-btn {
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      background: rgba(0,0,0,.6);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 520px;
+      margin: 20px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .flex {
+      display: flex;
+      gap: 8px;
+    }
+
+    .small {
+      font-size: 13px;
+    }
+
+    .wizard-steps {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .step {
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #f4f6fb;
+      font-size: 14px;
+    }
+
+    .step.active {
+      background: #4a6cf7;
+      color: #fff;
+    }
+
+    .tx-loading {
+      opacity: .9;
+      padding: 10px;
+      border-radius: 8px;
+      background: #fff8e6;
+      color: #856404;
+    }
+
+    .transactions-list {
+      max-height: 160px;
+      overflow: auto;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    .wallet-box .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .wallet-box .row input#newTokenAddress {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .wallet-box .row input#newTokenSymbol {
+      width: 80px;
+    }
+
+    .wallet-box .row input#newTokenDecimals {
+      width: 60px;
+    }
+
+    .wallet-box .row button#addTokenBtn {
+      flex-shrink: 0;
+    }
+
+    /* Mobile-specific adjustments */
+    @media (max-width: 480px) {
+      .wallet-box .row input#newTokenAddress {
+        width: 100%;
+      }
+      .wallet-box .row input#newTokenSymbol,
+      .wallet-box .row input#newTokenDecimals,
+      .wallet-box .row button#addTokenBtn {
+        width: 48%;
+        margin-top: 5px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <!-- Lock Screen -->
+  <div class="container">
+    <div class="screen" id="lockScreen">
+      <div class="lock-screen">
+        <div class="lock-header">
+          <i class="fas fa-lock" style="font-size: 48px; color: #4a6cf7; margin-bottom: 20px;"></i>
+          <h3>Laam Wallet Locked</h3>
+          <p class="muted">Enter your PIN to unlock</p>
+        </div>
+        
+        <div class="pin-inputs">
+          <input type="password" class="pin-digit" maxlength="1" data-index="0">
+          <input type="password" class="pin-digit" maxlength="1" data-index="1">
+          <input type="password" class="pin-digit" maxlength="1" data-index="2">
+          <input type="password" class="pin-digit" maxlength="1" data-index="3">
+          <input type="password" class="pin-digit" maxlength="1" data-index="4">
+          <input type="password" class="pin-digit" maxlength="1" data-index="5">
+        </div>
+        
+        <button id="unlockWalletBtn" class="lock-btn">
+          <i class="fas fa-unlock"></i> Unlock Wallet
+        </button>
+        
+        <div style="margin-top: 20px;">
+          <button id="forgotPinBtn" class="small-btn btn-ghost">
+            Forgot PIN?
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import/Create Wallet Screen -->
+    <div class="screen" id="importWalletScreen">
+      <h3><i class="fas fa-key"></i> Import or Create BSC Wallet</h3>
+      <label>Private Key:</label>
+      <textarea id="privateKeyInput" placeholder="Enter your private key starting with 0x..." rows="3"></textarea>
+      <button id="importWalletBtn" class="import-wallet-btn">
+        <i class="fas fa-download"></i> Import Wallet and Save
+      </button>
+      <div class="import-wallet-divider">or</div>
+      <button id="createNewWalletBtn" class="create-new-wallet-btn">
+        <i class="fas fa-plus-circle"></i> Create New Wallet
+      </button>
+    </div>
+
+    <div class="screen" id="accountGeneratedScreen">
+      <div class="success-animation">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <h3>BSC Wallet Created</h3>
+      <div class="key-display">
+        <div class="key-title">Private Key (Keep Secret!)</div>
+        <div class="key-value" id="secretKeyDisplay">Your private key will appear here</div>
+        <button class="copy-btn" id="copySecretKeyBtn"><i class="fas fa-copy"></i> COPY</button>
+      </div>
+      <div class="key-display">
+        <div class="key-title">Wallet Address</div>
+        <div class="key-value" id="publicKeyDisplay">Your wallet address will appear here</div>
+        <button class="copy-btn" id="copyPublicKeyBtn"><i class="fas fa-copy"></i> COPY</button>
+      </div>
+      <div class="warning-box">
+        <h4><i class="fas fa-exclamation-triangle"></i> IMPORTANT</h4>
+        <p>Save your Private Key in a secure place!</p>
+      </div>
+      <button id="useAccountBtn" class="use-account-btn">
+        <i class="fas fa-wallet"></i> USE THIS WALLET
+      </button>
+      <button id="backToImportBtn" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to Import
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Wallet Dashboard -->
+  <div class="dashboard-container" id="mainDashboard">
+    <!-- LEFT: Wallet controls -->
+    <div class="col" id="leftCol">
+      <div class="wallet-header">
+        <div class="wallet-info">
+          <h3><i class="fas fa-wallet"></i> Laam Wallet (Mainnet)</h3>
+          <div class="wallet-address" id="walletAddress">—</div>
+          <button id="copyAddressBtn" class="small-btn" style="margin-top: 5px;">
+            <i class="fas fa-copy"></i> Copy
+          </button>
+        </div>
+        <button id="lockWalletBtn" class="small-btn btn-ghost">
+          <i class="fas fa-lock"></i> Lock
+        </button>
+      </div>
+
+      <!-- Current Wallet Info -->
+      <div class="wallet-box">
+        <div class="balance-section">
+          <div class="muted">Total Balance</div>
+          <div class="balance-amount" id="totalBalance">0 BNB</div>
+          <div class="balance-usd" id="balanceUSD">$0</div>
+        </div>
+        <div class="actions">
+          <button id="sendBtnWallet" class="small-btn">
+            <i class="fas fa-paper-plane"></i> Send
+          </button>
+          <button id="receiveBtnWallet" class="small-btn secondary">
+            <i class="fas fa-qrcode"></i> Receive
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Assets & Transactions -->
+    <div class="col" id="rightCol">
+      <h3>Assets</h3>
+      <div id="assetsList" class="assets-list">
+        <div class="muted">Loading...</div>
+      </div>
+
+      <div class="wallet-box">
+        <label>Ku dar Token (BEP20)</label>
+        <div class="row">
+          <input id="newTokenAddress" placeholder="Contract address" />
+          <input id="newTokenSymbol" placeholder="SYMB" />
+          <input id="newTokenDecimals" placeholder="dec" />
+          <button id="addTokenBtn" class="small-btn">Add token</button>
+        </div>
+      </div>
+
+      <!-- Transactions history -->
+      <div class="wallet-box">
+        <h4 style="margin:0 0 8px 0">Transaction History (local)</h4>
+        <div class="transactions-list" id="transactionsList">
+          <div class="muted small">Wax wax ma jiraan weli — markaad dirto/hesho ayaa halkaan lagu soo bandhigi doonaa.</div>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button id="clearHistoryBtn" class="small-btn btn-ghost">Clear</button>
+          <button id="refreshBalancesBtn" class="small-btn">Refresh</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEND Modal (3-step wizard UI) -->
+  <div id="sendModal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h4 style="margin:0">Send — 3 Tallaabo</h4>
+        <button id="closeSendModal" class="small-btn btn-ghost">X</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="wizard-steps">
+          <div class="step active" data-step="1">1 Amount</div>
+          <div class="step" data-step="2">2 Recipient</div>
+          <div class="step" data-step="3">3 Confirm</div>
+        </div>
+
+        <!-- Step 1 -->
+        <div id="step1" class="step-panel">
+          <label>Qadarka</label>
+          <input id="sendAmount" placeholder="0.00" />
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <div class="row" style="gap:8px;align-items:center">
+              <button class="small-btn btn-ghost quick-amount" data-amount="0.001">0.001</button>
+              <button class="small-btn btn-ghost quick-amount" data-amount="0.01">0.01</button>
+              <button class="small-btn btn-ghost quick-amount" data-amount="0.1">0.1</button>
+            </div>
+
+            <select id="sendCurrency" style="margin-left:auto;padding:6px;border-radius:8px">
+              <option value="BNB">BNB</option>
+            </select>
+          </div>
+
+          <div class="hint" style="margin-top:8px">Available: <span id="availableBalance">0 BNB</span></div>
+
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button id="cancelSendBtn" class="small-btn btn-ghost">Cancel</button>
+            <button id="step1Next" class="small-btn">Next</button>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="step2" class="step-panel" style="display:none;margin-top:10px">
+          <label>Recipient Address</label>
+          <input id="recipientAddress" placeholder="0x..." />
+          <div class="hint">Geli address-ka BSC ee qofka aad lacagta u dirayso.</div>
+
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button id="step2Back" class="small-btn btn-ghost">Back</button>
+            <button id="step2Next" class="small-btn">Next</button>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="step3" class="step-panel" style="display:none;margin-top:10px">
+          <h4>Xaqiiji</h4>
+          <div style="margin-top:8px">
+            <div class="asset-item">
+              <div>Amount</div>
+              <div id="confirmAmount">0 BNB</div>
+            </div>
+            <div class="asset-item">
+              <div>To</div>
+              <div id="confirmAddress" style="font-family:monospace">—</div>
+            </div>
+            <div class="asset-item">
+              <div>Fee (est)</div>
+              <div id="confirmFee">estimating...</div>
+            </div>
+            <div style="margin-top:8px" id="txNotice" class="muted small"></div>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button id="step3Back" class="small-btn btn-ghost">Back</button>
+            <button id="confirmSendBtn" class="small-btn green">Confirm & Send</button>
+          </div>
+
+          <div id="sendProgress" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECEIVE Modal -->
+  <div id="receiveModal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h4 style="margin:0">Receive — QR & Address</h4>
+        <button id="closeReceiveModal" class="small-btn btn-ghost">X</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div id="qrcode" style="width:160px;height:160px;background:#fff;padding:8px;border-radius:8px"></div>
+          <div style="flex:1">
+            <div class="muted">Your address</div>
+            <div id="receiveAddress" style="font-family:monospace;font-weight:800;margin-top:6px">—</div>
+            <div style="margin-top:12px" class="actions">
+              <button id="copyReceiveAddr" class="small-btn">Copy</button>
+              <button id="downloadQR" class="small-btn btn-ghost">Download QR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ========== Global iyo Init ========== */
+let web3;
+const BSC_RPC = "https://bsc-dataseed.binance.org/"; // Mainnet
+const tokenABI = [
+  // balanceOf, decimals, symbol, transfer
+  {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
+  {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
+  {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"},
+  {"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"type":"function"}
+];
+
+// Encryption key for PIN
+const ENCRYPTION_KEY = "laam_wallet_secure_key";
+
+// Current session state
+let currentPrivateKey = null;
+let currentAddress = null;
+let tokens = JSON.parse(localStorage.getItem("laam_tokens_v1") || "[]");
+const MORALIS_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjQ5OWY0OWE4LWFjMzUtNDk0ZS05OTE2LWU3OGExNzVmODg1NSIsIm9yZ0lkIjoiNDgxMjQ4IiwidXNlcklkIjoiNDk1MTA5IiwidHlwZUlkIjoiNDAzODFmMWQtM2E3Zi00Yzg4LTlmYjEtZjhhOGZhMTcxNGRiIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NjMwNzg3OTgsImV4cCI6NDkxODgzODc5OH0.lFiCbJnV8ADu7ACI4D5YBvOr6G0NhQ1QXD5RwYnlQ7c";
+
+// Auto refresh control
+let autoRefreshEnabled = false;
+
+/* Initialize web3 provider */
+function initWeb3() {
+  try {
+    web3 = new Web3(new Web3.providers.HttpProvider(BSC_RPC));
+    console.log("Web3 ready (BSC mainnet)");
+  } catch(e) {
+    console.error("Web3 init error:", e);
+    alert("Error initializing Web3. Check console.");
+  }
+}
+initWeb3();
+
+/* ====== DOM Refs ====== */
+// Lock screen elements
+const lockScreen = document.getElementById('lockScreen');
+const pinDigits = document.querySelectorAll('.pin-digit');
+const unlockWalletBtn = document.getElementById('unlockWalletBtn');
+const forgotPinBtn = document.getElementById('forgotPinBtn');
+const lockWalletBtn = document.getElementById('lockWalletBtn');
+
+// Intro screens
+const importWalletScreen = document.getElementById('importWalletScreen');
+const accountGeneratedScreen = document.getElementById('accountGeneratedScreen');
+const mainDashboard = document.getElementById('mainDashboard');
+
+// Import/Create screen elements
+const privateKeyInput = document.getElementById('privateKeyInput');
+const importWalletBtn = document.getElementById('importWalletBtn');
+const createNewWalletBtn = document.getElementById('createNewWalletBtn');
+
+// Account generated screen elements
+const secretKeyDisplay = document.getElementById('secretKeyDisplay');
+const publicKeyDisplay = document.getElementById('publicKeyDisplay');
+const copySecretKeyBtn = document.getElementById('copySecretKeyBtn');
+const copyPublicKeyBtn = document.getElementById('copyPublicKeyBtn');
+const useAccountBtn = document.getElementById('useAccountBtn');
+const backToImportBtn = document.getElementById('backToImportBtn');
+
+// Dashboard elements
+const walletAddressEl = document.getElementById('walletAddress');
+const totalBalanceEl = document.getElementById('totalBalance');
+const balanceUSDEl = document.getElementById('balanceUSD');
+const assetsListEl = document.getElementById('assetsList');
+const addTokenBtn = document.getElementById('addTokenBtn');
+const newTokenAddress = document.getElementById('newTokenAddress');
+const newTokenSymbol = document.getElementById('newTokenSymbol');
+const newTokenDecimals = document.getElementById('newTokenDecimals');
+const copyAddressBtn = document.getElementById('copyAddressBtn');
+
+/* Send modal refs */
+const sendModal = document.getElementById('sendModal');
+const sendBtnWallet = document.getElementById('sendBtnWallet');
+const closeSendModal = document.getElementById('closeSendModal');
+const receiveBtnWallet = document.getElementById('receiveBtnWallet');
+const receiveModal = document.getElementById('receiveModal');
+const closeReceiveModal = document.getElementById('closeReceiveModal');
+const qrcodeDiv = document.getElementById('qrcode');
+const receiveAddressEl = document.getElementById('receiveAddress');
+const copyReceiveAddr = document.getElementById('copyReceiveAddr');
+const downloadQR = document.getElementById('downloadQR');
+
+/* Wizard elements */
+const stepPanels = {1: document.getElementById('step1'), 2: document.getElementById('step2'), 3: document.getElementById('step3')};
+const stepButtons = { next1: document.getElementById('step1Next'), next2: document.getElementById('step2Next'),
+                      back2: document.getElementById('step2Back'), back3: document.getElementById('step3Back'),
+                      cancelSendBtn: document.getElementById('cancelSendBtn'), confirmSendBtn: document.getElementById('confirmSendBtn')
+                    };
+const sendAmountInput = document.getElementById('sendAmount');
+const sendCurrencySelect = document.getElementById('sendCurrency');
+const recipientAddressInput = document.getElementById('recipientAddress');
+const availableBalanceEl = document.getElementById('availableBalance');
+const confirmAmountEl = document.getElementById('confirmAmount');
+const confirmAddressEl = document.getElementById('confirmAddress');
+const confirmFeeEl = document.getElementById('confirmFee');
+const sendProgressEl = document.getElementById('sendProgress');
+const txNoticeEl = document.getElementById('txNotice');
+const transactionsListEl = document.getElementById('transactionsList');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+const refreshBalancesBtn = document.getElementById('refreshBalancesBtn');
+
+/* ========== Encryption Functions ========== */
+function encryptData(data, pin) {
+  const key = CryptoJS.PBKDF2(pin, ENCRYPTION_KEY, { keySize: 256/32, iterations: 1000 });
+  const encrypted = CryptoJS.AES.encrypt(data, key.toString(), { mode: CryptoJS.mode.CBC });
+  return encrypted.toString();
+}
+
+function decryptData(encryptedData, pin) {
+  try {
+    const key = CryptoJS.PBKDF2(pin, ENCRYPTION_KEY, { keySize: 256/32, iterations: 1000 });
+    const decrypted = CryptoJS.AES.decrypt(encryptedData, key.toString(), { mode: CryptoJS.mode.CBC });
+    return decrypted.toString(CryptoJS.enc.Utf8);
+  } catch(e) {
+    return null;
+  }
+}
+
+function saveEncryptedWallet(address, privateKey, pin) {
+  const encryptedKey = encryptData(privateKey, pin);
+  localStorage.setItem("laam_encrypted_priv", encryptedKey);
+  localStorage.setItem("laam_wallet_address", address);
+  localStorage.setItem("laam_pin_set", "true");
+}
+
+function loadEncryptedWallet(pin) {
+  const encryptedKey = localStorage.getItem("laam_encrypted_priv");
+  const address = localStorage.getItem("laam_wallet_address");
+  
+  if (!encryptedKey || !address) return null;
+  
+  const decryptedKey = decryptData(encryptedKey, pin);
+  if (!decryptedKey) return null;
+  
+  return { address, privateKey: decryptedKey };
+}
+
+/* ========== PIN Input Management ========== */
+pinDigits.forEach((digit, index) => {
+  digit.addEventListener('input', (e) => {
+    // Move to next input automatically
+    if (e.target.value && index < pinDigits.length - 1) {
+      pinDigits[index + 1].focus();
+    }
+  });
+  
+  digit.addEventListener('keydown', (e) => {
+    // Handle backspace
+    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+      pinDigits[index - 1].focus();
+    }
+  });
+});
+
+function getPin() {
+  return Array.from(pinDigits).map(d => d.value).join('');
+}
+
+function clearPin() {
+  pinDigits.forEach(d => d.value = '');
+  pinDigits[0].focus();
+}
+
+/* ========== Screen Management ========== */
+function showScreen(screenName) {
+  // Hide all screens
+  importWalletScreen.classList.remove('active');
+  accountGeneratedScreen.classList.remove('active');
+  mainDashboard.classList.remove('active');
+  lockScreen.classList.remove('active');
+  
+  // Show requested screen
+  switch(screenName) {
+    case 'import':
+      importWalletScreen.classList.add('active');
+      break;
+    case 'account':
+      accountGeneratedScreen.classList.add('active');
+      break;
+    case 'dashboard':
+      mainDashboard.classList.add('active');
+      updateWalletUI();
+      break;
+    case 'lock':
+      lockScreen.classList.add('active');
+      clearPin();
+      break;
+  }
+}
+
+/* ========== Lock/Unlock Functions ========== */
+function lockWallet() {
+  stopAutoRefresh();
+  currentPrivateKey = null;
+  currentAddress = null;
+  sessionStorage.removeItem("laam_unlocked_priv");
+  sessionStorage.removeItem("laam_unlocked_addr");
+  showScreen('lock');
+}
+
+function unlockWallet(pin) {
+  const wallet = loadEncryptedWallet(pin);
+  if (wallet) {
+    setCurrentWallet(wallet.address, wallet.privateKey);
+    showScreen('dashboard');
+    return true;
+  }
+  return false;
+}
+
+/* ========== Auto Refresh Functions ========== */
+async function autoRefreshLoop() {
+    while (autoRefreshEnabled && currentAddress) {
+        console.log("⟳ Auto refreshing wallet...");
+        await updateWalletUI();
+        await new Promise(r => setTimeout(r, 30000)); // 30 seconds
+    }
+}
+
+function startAutoRefresh() {
+    autoRefreshEnabled = true;
+    autoRefreshLoop();
+}
+
+function stopAutoRefresh() {
+    autoRefreshEnabled = false;
+}
+
+/* ========== Wallet State Management ========== */
+function setCurrentWallet(addr, priv) {
+  currentAddress = addr;
+  currentPrivateKey = priv;
+  if (addr) sessionStorage.setItem("laam_unlocked_addr", addr);
+  if (priv) sessionStorage.setItem("laam_unlocked_priv", priv);
+  
+  // Start auto refresh when wallet is set
+  if (addr && priv) {
+    startAutoRefresh();
+  }
+}
+
+/* ========== Event Listeners ========== */
+// Lock/Unlock events
+unlockWalletBtn.addEventListener('click', () => {
+  const pin = getPin();
+  if (pin.length !== 6) {
+    alert('Fadlan geli PIN-ka oo dhan 6 xaraf');
+    return;
+  }
+  
+  if (unlockWallet(pin)) {
+    clearPin();
+  } else {
+    alert('PIN-ka waa khalad. Isku day mar kale.');
+    clearPin();
+  }
+});
+
+lockWalletBtn.addEventListener('click', () => {
+  if (confirm('Ma hubtaa inaad xidhayso wallet-ka?')) {
+    lockWallet();
+  }
+});
+
+forgotPinBtn.addEventListener('click', () => {
+  if (confirm('Haddii aad illowdo PIN-ka, waxaad waayi doontaa access-ka wallet-ka. Ma rabtaa inaad bilowdo mid cusub?')) {
+    localStorage.removeItem("laam_encrypted_priv");
+    localStorage.removeItem("laam_wallet_address");
+    localStorage.removeItem("laam_pin_set");
+    localStorage.removeItem("laam_tokens_v1");
+    showScreen('import');
+  }
+});
+
+// Import/Create wallet events
+createNewWalletBtn.addEventListener('click', async () => {
+  try {
+    const acct = web3.eth.accounts.create();
+    
+    // Display the generated account
+    secretKeyDisplay.textContent = acct.privateKey;
+    publicKeyDisplay.textContent = acct.address;
+    
+    // Store temporarily for use when they click "USE THIS WALLET"
+    sessionStorage.setItem("temp_private_key", acct.privateKey);
+    sessionStorage.setItem("temp_address", acct.address);
+    
+    showScreen('account');
+  } catch(e) {
+    console.error("Create wallet error", e);
+    alert('Error creating wallet. Eeg console.');
+  }
+});
+
+importWalletBtn.addEventListener('click', async () => {
+  let priv = privateKeyInput.value.trim();
+  if (!priv) { alert('Fadlan geli private key'); return; }
+  if (!priv.startsWith('0x')) priv = '0x'+priv;
+  
+  try {
+    const acct = web3.eth.accounts.privateKeyToAccount(priv);
+    
+    // Display the imported account
+    secretKeyDisplay.textContent = acct.privateKey;
+    publicKeyDisplay.textContent = acct.address;
+    
+    // Store temporarily for use when they click "USE THIS WALLET"
+    sessionStorage.setItem("temp_private_key", acct.privateKey);
+    sessionStorage.setItem("temp_address", acct.address);
+    
+    showScreen('account');
+    privateKeyInput.value = '';
+  } catch(e) {
+    console.error("Import error", e);
+    alert('Private key-ga waa saxna waa khalad. Fadlan hubi.');
+  }
+});
+
+// Account generated screen events
+useAccountBtn.addEventListener('click', () => {
+  const tempPriv = sessionStorage.getItem("temp_private_key");
+  const tempAddr = sessionStorage.getItem("temp_address");
+  
+  if (tempPriv && tempAddr) {
+    // Weyno inaan codsanayno PIN ka hor inta aanan keydin
+    const pin = prompt("Set 6-digit PIN for wallet security:");
+    if (!pin || pin.length !== 6 || !/^\d+$/.test(pin)) {
+      alert("Fadlan geli PIN sax ah (6 numbers kaliya)");
+      return;
+    }
+    
+    // Verify PIN
+    const confirmPin = prompt("Confirm your PIN:");
+    if (pin !== confirmPin) {
+      alert("PIN-ku ma qabanay. Bilow from scratch.");
+      return;
+    }
+    
+    // Save encrypted wallet
+    saveEncryptedWallet(tempAddr, tempPriv, pin);
+    setCurrentWallet(tempAddr, tempPriv);
+    showScreen('dashboard');
+    
+    // Clear temporary storage
+    sessionStorage.removeItem("temp_private_key");
+    sessionStorage.removeItem("temp_address");
+  }
+});
+
+backToImportBtn.addEventListener('click', () => {
+  showScreen('import');
+});
+
+/* Copy button functionality */
+copySecretKeyBtn.addEventListener('click', async () => {
+  try { 
+    await navigator.clipboard.writeText(secretKeyDisplay.textContent); 
+    copySecretKeyBtn.innerHTML = '<i class="fas fa-check"></i> COPIED';
+    setTimeout(() => {
+      copySecretKeyBtn.innerHTML = '<i class="fas fa-copy"></i> COPY';
+    }, 2000);
+  } catch(e){ 
+    alert('Copy failed'); 
+  }
+});
+
+copyPublicKeyBtn.addEventListener('click', async () => {
+  try { 
+    await navigator.clipboard.writeText(publicKeyDisplay.textContent); 
+    copyPublicKeyBtn.innerHTML = '<i class="fas fa-check"></i> COPIED';
+    setTimeout(() => {
+      copyPublicKeyBtn.innerHTML = '<i class="fas fa-copy"></i> COPY';
+    }, 2000);
+  } catch(e){ 
+    alert('Copy failed'); 
+  }
+});
+
+copyAddressBtn.addEventListener('click', async () => {
+  if (!currentAddress) return alert('Wallet ma furmin');
+  try { 
+    await navigator.clipboard.writeText(currentAddress); 
+    alert('Address copied'); 
+  } catch(e){ 
+    alert('Copy failed'); 
+  }
+});
+
+/* ========== Dashboard Functions ========== */
+/* Show wallet info on UI */
+async function updateWalletUI() {
+    if (!currentAddress) {
+        walletAddressEl.innerText = '—';
+        totalBalanceEl.innerText = '0.0000 BNB';
+        balanceUSDEl.innerText = '$0';
+        assetsListEl.innerHTML = '<div class="muted">Wallet ma furmin</div>';
+        availableBalanceEl.innerText = '0 BNB';
+        return;
+    }
+
+    walletAddressEl.innerText = currentAddress;
+    receiveAddressEl.innerText = currentAddress;
+
+    // Fetch BNB balance + price
+    let bnbBalance = 0;
+    let bnbPrice = 0;
+    try {
+        const balanceWei = await web3.eth.getBalance(currentAddress);
+        bnbBalance = parseFloat(web3.utils.fromWei(balanceWei, 'ether'));
+        // Fetch BNB price from Coingecko
+        try {
+            const cgRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd`);
+            const data = await cgRes.json();
+            bnbPrice = data?.binancecoin?.usd || 300;
+        } catch(e){
+            console.warn('BNB price fetch failed, fallback to $300', e);
+            bnbPrice = 300;
+        }
+        totalBalanceEl.innerText = `${bnbBalance.toFixed(4)} BNB`;
+        availableBalanceEl.innerText = `${bnbBalance.toFixed(4)} BNB`;
+        balanceUSDEl.innerText = `$${(bnbBalance*bnbPrice).toFixed(2)}`;
+    } catch(e){ console.error('BNB balance error', e); }
+
+    // Send currency select
+    sendCurrencySelect.innerHTML = '<option value="BNB">BNB</option>';
+
+    tokens = JSON.parse(localStorage.getItem("laam_tokens_v1") || "[]");
+    for (let t of tokens) {
+        const opt = document.createElement('option');
+        opt.value = t.address;
+        opt.textContent = `${t.symbol} (${t.symbol})`;
+        sendCurrencySelect.appendChild(opt);
+    }
+
+    // Render assets
+    assetsListEl.innerHTML = '';
+    // BNB row
+    const bnbLogoURL = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png';
+    const bnbRow = document.createElement('div');
+    bnbRow.className = 'asset-item';
+    bnbRow.innerHTML = `
+        <div class="asset-icon-wrapper">
+            <img src="${bnbLogoURL}" alt="BNB" class="asset-logo" onerror="this.onerror=null;this.src='BN';">
+        </div>
+        <div class="asset-details">
+            <div class="asset-name">Binance Coin</div>
+            <div class="asset-symbol">BNB</div>
+        </div>
+        <div class="asset-balance">
+            <div class="asset-amount" id="bnbAmount">${bnbBalance.toFixed(4)}</div>
+            <div class="asset-value" id="bnbValue">$${(bnbBalance*bnbPrice).toFixed(2)}</div>
+        </div>
+        <div class="asset-actions" style="display:none; margin-top:5px; gap:5px;">
+            <button class="small-btn send-btn">Send</button>
+            <button class="small-btn receive-btn">Receive</button>
+        </div>
+    `;
+    assetsListEl.appendChild(bnbRow);
+
+    const bnbActions = bnbRow.querySelector('.asset-actions');
+    bnbRow.addEventListener('click', e=>{
+        if(e.target.classList.contains('send-btn') || e.target.classList.contains('receive-btn')) return;
+        bnbActions.style.display = bnbActions.style.display==='flex' ? 'none':'flex';
+        bnbActions.style.flexWrap = 'wrap';
+    });
+    bnbRow.querySelector('.send-btn').addEventListener('click', e=>{
+        e.stopPropagation();
+        alert('Send BNB');
+    });
+    bnbRow.querySelector('.receive-btn').addEventListener('click', e=>{
+        e.stopPropagation();
+        alert('Receive BNB');
+    });
+
+    // Tokens
+    if(tokens.length===0){
+        const div = document.createElement('div');
+        div.className = 'muted';
+        div.style.padding = '20px';
+        div.style.textAlign = 'center';
+        div.innerText = 'No tokens added yet.';
+        assetsListEl.appendChild(div);
+    } else {
+        for(let tk of tokens){
+            const wrapper = document.createElement('div');
+            wrapper.className = 'asset-item';
+            wrapper.style.cursor = 'pointer';
+            wrapper.innerHTML = `
+                <div class="asset-icon-wrapper">
+                    <img src="${tk.logo}" alt="${tk.symbol}" class="asset-logo" onerror="this.onerror=null;this.src='${(tk.symbol||'T').substring(0,2)}';">
+                </div>
+                <div class="asset-details">
+                    <div class="asset-name" id="tok-${tk.address}-name">${tk.name||tk.symbol}</div>
+                    <div class="asset-symbol">${tk.symbol}</div>
+                </div>
+                <div class="asset-balance">
+                    <div class="asset-amount" id="tok-${tk.address}-bal">loading...</div>
+                    <div class="asset-value" id="tok-${tk.address}-val">$-</div>
+                </div>
+                <div class="asset-actions" style="display:none; margin-top:5px; gap:5px;">
+                    <button class="small-btn send-btn">Send</button>
+                    <button class="small-btn receive-btn">Receive</button>
+                    <button class="small-btn remove-btn">Remove</button>
+                </div>
+            `;
+            assetsListEl.appendChild(wrapper);
+
+            const actions = wrapper.querySelector('.asset-actions');
+
+            wrapper.addEventListener('click', e=>{
+                if(['send-btn','receive-btn','remove-btn'].some(c=>e.target.classList.contains(c))) return;
+                actions.style.display = actions.style.display==='flex'?'none':'flex';
+                actions.style.flexWrap = 'wrap';
+            });
+
+            wrapper.querySelector('.send-btn').addEventListener('click', e=>{
+                e.stopPropagation();
+                alert(`Send ${tk.symbol}`);
+            });
+            wrapper.querySelector('.receive-btn').addEventListener('click', e=>{
+                e.stopPropagation();
+                alert(`Receive ${tk.symbol}`);
+            });
+            wrapper.querySelector('.remove-btn').addEventListener('click', e=>{
+                e.stopPropagation();
+                if(confirm(`Remove ${tk.symbol}?`)){
+                    tokens = tokens.filter(t=>t.address!==tk.address);
+                    localStorage.setItem("laam_tokens_v1", JSON.stringify(tokens));
+                    updateWalletUI();
+                }
+            });
+
+            // Fetch balance + price
+            (async(token)=>{
+                try{
+                    const contract = new web3.eth.Contract(tokenABI, token.address);
+                    const balRaw = await contract.methods.balanceOf(currentAddress).call();
+                    const dec = token.decimals!==undefined ? Number(token.decimals) : await contract.methods.decimals().call();
+                    const bal = Number(balRaw)/(10**dec);
+                    document.getElementById(`tok-${token.address}-bal`).innerText = bal.toFixed(4);
+                    
+                    // Price using Moralis
+                    let price = 0;
+                    try {
+                        const res = await fetch(
+                            `https://deep-index.moralis.io/api/v2/erc20/${token.address}/price?chain=bsc`,
+                            {
+                                headers: {
+                                    "X-API-Key": MORALIS_API_KEY
+                                }
+                            }
+                        );
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            price = data.usdPrice || 0;
+                        }
+                    } catch (err) {
+                        console.warn("Moralis price error →", err);
+                    }
+                    
+                    const value = bal * price;
+                    document.getElementById(`tok-${token.address}-val`).innerText = `$${value.toFixed(2)}`;
+                    
+                }catch(err){
+                    console.error('Token balance error', err);
+                    document.getElementById(`tok-${token.address}-bal`).innerText='err';
+                }
+            })(tk);
+        }
+    }
+}
+        
+/* ====== Add Token (automatic logo with Coingecko/CMC fallback) ====== */
+addTokenBtn.addEventListener('click', async () => {
+  const addr = (newTokenAddress.value || '').trim();
+  let sym = (newTokenSymbol.value || '').trim();
+  let dec = (newTokenDecimals.value || '').trim();
+
+  if (!web3.utils.isAddress(addr)) { alert('Addresska token-ka ma saxna'); return; }
+
+  // Haddii symbol ama decimals madhan → fetch automatic
+  if (!sym || !dec) {
+      try {
+          const contract = new web3.eth.Contract(tokenABI, addr);
+          sym = sym || await contract.methods.symbol().call();
+          dec = dec || await contract.methods.decimals().call();
+      } catch(err) {
+          console.error("Error fetching token info:", err);
+          alert('Failed to fetch token info');
+          return;
+      }
+  }
+
+  dec = Number(dec);
+
+  tokens = JSON.parse(localStorage.getItem("laam_tokens_v1") || "[]");
+  if (tokens.some(t => t.address.toLowerCase() === addr.toLowerCase())) {
+    alert('Token-kan hore ayaa lagu daray.');
+    return;
+  }
+
+  // Automatic logo URL (TrustWallet convention)
+  let logo = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/${addr}/logo.png`;
+
+  // Fallback: Coingecko API
+  try {
+      const cgRes = await fetch(`https://api.coingecko.com/api/v3/coins/binance-smart-chain/contract/${addr.toLowerCase()}`);
+      if (cgRes.ok) {
+          const cgData = await cgRes.json();
+          if (cgData.image && cgData.image.small) {
+              logo = cgData.image.small; // override if available
+          }
+      }
+  } catch(e) {
+      console.warn("CoinGecko logo fetch failed:", e);
+  }
+
+  tokens.push({ address: addr, symbol: sym, decimals: dec, name: sym, logo });
+  localStorage.setItem("laam_tokens_v1", JSON.stringify(tokens));
+
+  // Clear inputs
+  newTokenAddress.value = newTokenSymbol.value = newTokenDecimals.value = '';
+  await updateWalletUI();
+});
+
+// Auto-fill symbol & decimals marka address la galiyo
+newTokenAddress.addEventListener('blur', async () => {
+    const address = newTokenAddress.value.trim();
+    if (!web3.utils.isAddress(address)) {
+        newTokenSymbol.value = '';
+        newTokenDecimals.value = '';
+        return;
+    }
+
+    try {
+        const contract = new web3.eth.Contract(tokenABI, address);
+        const [symbol, decimals] = await Promise.all([
+            contract.methods.symbol().call(),
+            contract.methods.decimals().call()
+        ]);
+        newTokenSymbol.value = symbol;
+        newTokenDecimals.value = decimals;
+    } catch (err) {
+        console.error("Error fetching token info:", err);
+        newTokenSymbol.value = '';
+        newTokenDecimals.value = '';
+    }
+});
+
+/* ========== Send modal logic (wizard) ========== */
+sendBtnWallet.addEventListener('click', () => {
+  if (!currentAddress) { alert('Fadlan marka hore fur wallet (create/import)'); return; }
+  openSendModal();
+});
+
+function openSendModal() {
+  document.querySelectorAll('.step').forEach((el,i)=>el.classList.toggle('active', i===0));
+  Object.values(stepPanels).forEach(p => p.style.display='none');
+  stepPanels[1].style.display='block';
+  sendModal.classList.add('active');
+  sendProgressEl.innerHTML = '';
+  txNoticeEl.innerText = '';
+}
+
+closeSendModal.addEventListener('click', ()=> sendModal.classList.remove('active'));
+cancelSendBtn.addEventListener('click', ()=> sendModal.classList.remove('active'));
+
+/* wizard navigation */
+stepButtons.next1.addEventListener('click', () => {
+  const amt = sendAmountInput.value.trim();
+  if (!amt || isNaN(amt) || Number(amt) <= 0) { alert('Geli qadarka saxda ah'); return; }
+  stepPanels[1].style.display='none'; stepPanels[2].style.display='block';
+  setWizardStepActive(2);
+});
+stepButtons.back2.addEventListener('click', () => {
+  stepPanels[2].style.display='none'; stepPanels[1].style.display='block';
+  setWizardStepActive(1);
+});
+stepButtons.next2.addEventListener('click', () => {
+  const addr = recipientAddressInput.value.trim();
+  if (!web3.utils.isAddress(addr)) { alert('Recipient address ma saxna'); return; }
+  const cur = sendCurrencySelect.value;
+  const amt = Number(sendAmountInput.value);
+  confirmAmountEl.innerText = `${amt} ${ cur === 'BNB' ? 'BNB' : tokens.find(t=>t.address===cur)?.symbol || 'TOKEN'}`;
+  confirmAddressEl.innerText = addr;
+  estimateFeePreview(cur, amt, addr);
+  stepPanels[2].style.display='none'; stepPanels[3].style.display='block';
+  setWizardStepActive(3);
+});
+stepButtons.back3.addEventListener('click', () => {
+  stepPanels[3].style.display='none'; stepPanels[2].style.display='block';
+  setWizardStepActive(2);
+});
+
+/* confirm send */
+stepButtons.confirmSendBtn.addEventListener('click', async () => {
+  const currency = sendCurrencySelect.value;
+  const amount = Number(sendAmountInput.value);
+  const to = recipientAddressInput.value.trim();
+  if (!currentPrivateKey) { alert('Private key ma jiro. Import/create marka hore.'); return; }
+  sendProgressEl.innerHTML = '<div class="tx-loading">Sending... please wait</div>';
+  try {
+    let txHash;
+    if (currency === 'BNB') {
+      txHash = await sendBNB(currentPrivateKey, to, amount);
+      pushTxHistory({ type: 'Send BNB', to, amount, txHash, ts: Date.now() });
+    } else {
+      const t = tokens.find(tt => tt.address === currency);
+      if (!t) throw new Error('Token ma jira');
+      txHash = await sendToken(currentPrivateKey, t.address, to, amount, t.decimals);
+      pushTxHistory({ type: `Send ${t.symbol}`, to, amount, txHash, ts: Date.now() });
+    }
+    sendProgressEl.innerHTML = `<div class="muted small">Success! TxHash: <a target="_blank" href="https://bscscan.com/tx/${txHash}">${txHash}</a></div>`;
+    await updateWalletUI();
+    refreshTxHistoryUI();
+  } catch(e) {
+    console.error("Send error", e);
+    sendProgressEl.innerHTML = `<div class="muted small" style="color:#a00">Error: ${e.message || e}</div>`;
+  }
+});
+
+/* helper: set wizard step active style */
+function setWizardStepActive(step) {
+  document.querySelectorAll('.step').forEach((el)=> el.classList.toggle('active', Number(el.dataset.step) === step));
+}
+
+/* estimate fee preview */
+async function estimateFeePreview(currency, amount, to) {
+  try {
+    if (currency === 'BNB') {
+      const gasPrice = await web3.eth.getGasPrice();
+      const gasLimit = 21000;
+      const feeBNB = web3.utils.fromWei((BigInt(gasPrice) * BigInt(gasLimit)).toString(), 'ether');
+      confirmFeeEl.innerText = `${Number(feeBNB).toFixed(6)} BNB (est)`;
+      txNoticeEl.innerText = 'Fee waa qiyaas; waxaa laga yaabaa inuu ka yaraado ama ka bato markii la saxiixo.';
+    } else {
+      const gasPrice = await web3.eth.getGasPrice();
+      const est = 120000;
+      const feeBNB = web3.utils.fromWei((BigInt(gasPrice) * BigInt(est)).toString(), 'ether');
+      confirmFeeEl.innerText = `${Number(feeBNB).toFixed(6)} BNB (est)`;
+      txNoticeEl.innerText = 'Token transfer fee waa qiyaas; tani waxay ku kuxirantahay network-ka.';
+    }
+  } catch(e){
+    console.error("Estimate err", e);
+    confirmFeeEl.innerText = 'error';
+  }
+}
+/* Quick amounts */
+document.querySelectorAll('.quick-amount').forEach(b => {
+  b.addEventListener('click', () => sendAmountInput.value = b.dataset.amount);
+});
+
+/* ======== Send BNB (signed tx) ======== */
+async function sendBNB(privKey, to, amountBNB) {
+  const account = web3.eth.accounts.privateKeyToAccount(privKey);
+  const from = account.address;
+  const nonce = await web3.eth.getTransactionCount(from, 'pending');
+  const value = web3.utils.toWei(amountBNB.toString(), 'ether');
+  const gasPrice = await web3.eth.getGasPrice();
+  const tx = {
+    to,
+    value,
+    gas: 21000,
+    gasPrice,
+    nonce,
+    chainId: 56
+  };
+  const signed = await account.signTransaction(tx);
+  const receipt = await web3.eth.sendSignedTransaction(signed.rawTransaction);
+  return receipt.transactionHash;
+}
+
+/* ======== Send Token (ERC20 transfer) ======== */
+async function sendToken(privKey, tokenAddress, to, amount, decimals) {
+  const account = web3.eth.accounts.privateKeyToAccount(privKey);
+  const from = account.address;
+  const contract = new web3.eth.Contract(tokenABI, tokenAddress);
+  const value = BigInt(Math.floor(amount * (10 ** decimals))).toString();
+  const data = contract.methods.transfer(to, value).encodeABI();
+  const nonce = await web3.eth.getTransactionCount(from, 'pending');
+  const gasPrice = await web3.eth.getGasPrice();
+  let gasLimit;
+  try {
+    gasLimit = await contract.methods.transfer(to, value).estimateGas({from});
+    gasLimit = Math.floor(gasLimit * 1.2);
+  } catch(e) { gasLimit = 150000; }
+  const tx = {
+    to: tokenAddress,
+    data,
+    gas: gasLimit,
+    gasPrice,
+    nonce,
+    value: '0x0',
+    chainId: 56
+  };
+  const signed = await account.signTransaction(tx);
+  const receipt = await web3.eth.sendSignedTransaction(signed.rawTransaction);
+  return receipt.transactionHash;
+}
+
+/* ========== Receive modal: QR generation ========== */
+receiveBtnWallet.addEventListener('click', () => {
+  if (!currentAddress) { alert('Fadlan fur wallet marka hore'); return; }
+  openReceiveModal();
+});
+
+function openReceiveModal() {
+  qrcodeDiv.innerHTML = '';
+  new QRCode(qrcodeDiv, {
+    text: currentAddress,
+    width: 160,
+    height: 160,
+    colorDark : "#000000",
+    colorLight : "#ffffff",
+    correctLevel : QRCode.CorrectLevel.H
+  });
+  receiveAddressEl.innerText = currentAddress;
+  receiveModal.classList.add('active');
+}
+closeReceiveModal.addEventListener('click', ()=> receiveModal.classList.remove('active'));
+copyReceiveAddr.addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(currentAddress); alert('Address copied'); } catch(e){ alert('Copy failed'); }
+});
+downloadQR.addEventListener('click', () => {
+  const svg = qrcodeDiv.querySelector('img') || qrcodeDiv.querySelector('canvas');
+  if (!svg) {
+    alert('QR not available');
+    return;
+  }
+  if (svg.tagName.toLowerCase() === 'img') {
+    const src = svg.src;
+    const a = document.createElement('a');
+    a.href = src;
+    a.download = `${currentAddress}.png`;
+    a.click();
+  } else {
+    const data = svg.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = data;
+    a.download = `${currentAddress}.png`;
+    a.click();
+  }
+});
+
+/* ========== Transaction History Functions ========== */
+function pushTxHistory(item) {
+  const arr = JSON.parse(localStorage.getItem('laam_tx_history') || '[]');
+  arr.unshift(item);
+  localStorage.setItem('laam_tx_history', JSON.stringify(arr.slice(0,200)));
+  refreshTxHistoryUI();
+}
+
+function refreshTxHistoryUI() {
+  const arr = JSON.parse(localStorage.getItem('laam_tx_history') || '[]');
+  if (arr.length === 0) {
+    transactionsListEl.innerHTML = '<div class="muted small">No transactions yet</div>';
+    return;
+  }
+  transactionsListEl.innerHTML = '';
+  for (let it of arr) {
+    const d = new Date(it.ts);
+    const el = document.createElement('div');
+    el.className = 'asset-item';
+    el.innerHTML = `<div><strong>${it.type}</strong><div class="muted small">to ${it.to}</div></div><div style="text-align:right"><div class="small">${d.toLocaleString()}</div><div><a target="_blank" href="https://bscscan.com/tx/${it.txHash}">${shortHash(it.txHash)}</a></div></div>`;
+    transactionsListEl.appendChild(el);
+  }
+}
+
+function shortHash(h) { return h ? h.substring(0,10)+'...' : '-'; }
+
+// Ku dar event listeners-ka cusub
+clearHistoryBtn.addEventListener('click', ()=> { 
+  if (confirm('Clear history?')) { 
+    localStorage.removeItem('laam_tx_history'); 
+    refreshTxHistoryUI(); 
+  }
+});
+
+refreshBalancesBtn.addEventListener('click', updateWalletUI);
+
+/* ========== On Load Logic ========== */
+window.addEventListener('load', async () => {
+  tokens = JSON.parse(localStorage.getItem("laam_tokens_v1") || "[]");
+  
+  // Check if wallet exists in localStorage
+  const hasEncryptedWallet = localStorage.getItem("laam_encrypted_priv") && 
+                            localStorage.getItem("laam_wallet_address");
+  
+  if (hasEncryptedWallet) {
+    showScreen('lock');
+  } else {
+    showScreen('import');
+  }
+  
+  refreshTxHistoryUI();
+});
+
+// --- Spinner helper ---
+function setTokenStatusIcon(state){
+  let icon = document.getElementById("tokenStatusIcon");
+  if(!icon){
+    icon = document.createElement("span");
+    icon.id = "tokenStatusIcon";
+    icon.style.marginLeft = "8px";
+    icon.style.fontSize = "1.1rem";
+    newTokenAddress.parentNode.insertBefore(icon, newTokenAddress.nextSibling);
+  }
+  if(state === "loading"){
+    icon.textContent = "⏳";
+    icon.style.color = "goldenrod";
+  } else if(state === "success"){
+    icon.textContent = "✅";
+    icon.style.color = "limegreen";
+  } else if(state === "failed"){
+    icon.textContent = "❌";
+    icon.style.color = "crimson";
+  } else {
+    icon.textContent = "";
+  }
+}
+</script>
+</body>
+</html>

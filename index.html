@@ -1716,6 +1716,7 @@ async function unlockWithFingerprint_WebAuthn() {
   try {
     const credId = localStorage.getItem("laam_webauthn_cred_id");
     const encryptedPriv = localStorage.getItem("laam_webauthn_enc_priv");
+
     if (!credId || !encryptedPriv) {
       fingerprintStatus.textContent = "Fingerprint lama diiwaan gelin";
       fingerprintStatus.className = "fingerprint-status fingerprint-error";
@@ -1726,23 +1727,44 @@ async function unlockWithFingerprint_WebAuthn() {
     fingerprintStatus.textContent = "Sug fingerprint...";
 
     const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const publicKey = { challenge, allowCredentials: [{ type: "public-key", id: base64UrlToBuf(credId) }], userVerification: "required", timeout: 60000 };
+    const publicKey = {
+      challenge,
+      allowCredentials: [{ type: "public-key", id: base64UrlToBuf(credId) }],
+      userVerification: "required",
+      timeout: 60000
+    };
+
     await navigator.credentials.get({ publicKey });
 
     const key = await deriveKeyFromCredentialId(credId);
     const priv = await decryptPrivKey(encryptedPriv, key);
-    if(priv) setCurrentWallet(localStorage.getItem("laam_wallet_address"), priv);
 
-    fingerprintStatus.textContent = "Wallet unlocked!";
-    fingerprintStatus.className = "fingerprint-status fingerprint-success";
+    if (priv && localStorage.getItem("laam_wallet_address")) {
+      // ✅ Set wallet directly without PIN
+      setCurrentWallet(localStorage.getItem("laam_wallet_address"), priv);
 
-  } catch(e) {
+      fingerprintStatus.textContent = "Wallet unlocked!";
+      fingerprintStatus.className = "fingerprint-status fingerprint-success";
+
+      // Show navigation & dashboard
+      document.getElementById("homeNavigation").style.display = "flex";
+      document.querySelector(".bottom-nav").style.display = "flex";
+      document.querySelector(".trade-sub-nav").style.display = "flex";
+
+      showScreen("dashboard");
+    } else {
+      fingerprintStatus.textContent = "Wallet data ma helin";
+      fingerprintStatus.className = "fingerprint-status fingerprint-error";
+    }
+
+  } catch (e) {
+    console.error("Fingerprint unlock error:", e);
     fingerprintStatus.textContent = "Fingerprint failed";
     fingerprintStatus.className = "fingerprint-status fingerprint-error";
   } finally {
     fingerprintScanner.classList.remove("active");
   }
-}
+  }
 
 // --- Update Fingerprint UI ---
 function updateFingerprintUI_WebAuthn() {
